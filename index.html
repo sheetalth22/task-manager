@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Task Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="sidebar">
+  <h2>Task App</h2>
+
+  <button onclick="showSection('dashboard')">Dashboard</button>
+  <button onclick="showSection('task')">Tasks</button>
+  <button onclick="showSection('analytics')">Analytics</button>
+  <button onclick="showSection('calendar')">Calendar</button>
+
+  <hr>
+
+  <button onclick="showSection('settings')">Settings</button>
+  <button onclick="showSection('help')">Help</button>
+</div>
+
+<div class="main">
+
+<!-- DASHBOARD -->
+<div id="dashboardSection">
+  <h2>Dashboard</h2>
+
+  <div class="cards">
+    <div class="card">
+      <h3>Total Tasks</h3>
+      <p id="total">0</p>
+    </div>
+    <div class="card">
+      <h3>Completed</h3>
+      <p id="completed">0</p>
+    </div>
+    <div class="card">
+      <h3>Pending</h3>
+      <p id="pending">0</p>
+    </div>
+  </div>
+</div>
+
+<!-- TASKS -->
+<div id="taskSection" style="display:none;">
+  <h3>Create Task</h3>
+
+  <input id="title" placeholder="Task title">
+  <input id="assigned" placeholder="Assign to">
+  <button onclick="createTask()">Add Task</button>
+
+  <h3>All Tasks</h3>
+  <ul id="list"></ul>
+</div>
+
+<!-- ANALYTICS -->
+<div id="analyticsSection" style="display:none;">
+  <h2>Analytics</h2>
+
+  <div class="card">
+    <h3>Task Overview</h3>
+    <p>📊 Total Tasks: <span id="a_total">0</span></p>
+    <p>✅ Completed: <span id="a_completed">0</span></p>
+    <p>⏳ Pending: <span id="a_pending">0</span></p>
+  </div>
+
+  <div class="card">
+    <h3>Productivity Insight</h3>
+    <p id="insight">No data yet</p>
+  </div>
+</div>
+
+<!-- CALENDAR -->
+<div id="calendarSection" style="display:none;">
+  <h2>Calendar</h2>
+
+  <div class="card">
+    <h3>📅 Task Summary Calendar</h3>
+    <p>Today: <span id="todayDate"></span></p>
+    <p>Total Scheduled Tasks: <span id="c_total">0</span></p>
+    <p>Status: All tasks are managed via task list</p>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div id="settingsSection" style="display:none;">
+  <h2>Settings</h2>
+
+  <div class="card">
+    <h3>⚙️ App Settings</h3>
+    <p>👤 User: Task Manager User</p>
+    <p>🔔 Notifications: Enabled</p>
+    <p>🌙 Theme: Light Mode</p>
+    <p>🔄 Auto Sync: Active</p>
+  </div>
+</div>
+
+<!-- HELP -->
+<div id="helpSection" style="display:none;">
+  <h2>Help & Support</h2>
+
+  <div class="card">
+    <h3>❓ How to use</h3>
+    <p>👉 Add tasks from Tasks section</p>
+    <p>👉 Mark Done to complete tasks</p>
+    <p>👉 Check Analytics for progress</p>
+    <p>👉 Use Calendar for overview</p>
+  </div>
+
+  <div class="card">
+    <h3>📩 Support</h3>
+    <p>Email: support@taskapp.com</p>
+  </div>
+</div>
+
+<!-- TEAM -->
+<h3>Team Members</h3>
+<div class="team">
+  <div class="member">👩 Sheetal - Developer</div>
+  <div class="member">👨 Rahul - Tester</div>
+  <div class="member">👩 Priya - Designer</div>
+</div>
+
+</div>
+
+<script>
+
+// SECTION SWITCH
+function showSection(section){
+  document.getElementById("dashboardSection").style.display = "none";
+  document.getElementById("taskSection").style.display = "none";
+  document.getElementById("analyticsSection").style.display = "none";
+  document.getElementById("calendarSection").style.display = "none";
+  document.getElementById("settingsSection").style.display = "none";
+  document.getElementById("helpSection").style.display = "none";
+
+  document.getElementById(section + "Section").style.display = "block";
+}
+
+// CREATE TASK
+async function createTask(){
+  await fetch("http://localhost:5000/task",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({
+      title: document.getElementById("title").value,
+      assignedTo: document.getElementById("assigned").value
+    })
+  });
+
+  getTasks();
+}
+
+// GET TASKS
+async function getTasks(){
+  const res = await fetch("http://localhost:5000/tasks");
+  const data = await res.json();
+
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+
+  let total = data.length;
+  let completed = 0;
+
+  data.forEach(t=>{
+    if(t.status === "Completed") completed++;
+
+    const li = document.createElement("li");
+
+    li.innerHTML = `
+      <div>
+        <b>${t.title}</b> - ${t.assignedTo}
+        <span>(${t.status})</span>
+      </div>
+      <div>
+        <button onclick="updateTask('${t._id}')">Done</button>
+        <button onclick="deleteTask('${t._id}')">Delete</button>
+      </div>
+    `;
+
+    list.appendChild(li);
+  });
+
+  let pending = total - completed;
+
+  // Dashboard
+  document.getElementById("total").innerText = total;
+  document.getElementById("completed").innerText = completed;
+  document.getElementById("pending").innerText = pending;
+
+  // Analytics
+  document.getElementById("a_total").innerText = total;
+  document.getElementById("a_completed").innerText = completed;
+  document.getElementById("a_pending").innerText = pending;
+
+  // Insight
+  document.getElementById("insight").innerText =
+    total === 0 ? "No tasks yet" :
+    completed > pending ? "Good productivity 👍" : "Need improvement ⚡";
+
+  // Calendar
+  document.getElementById("c_total").innerText = total;
+  document.getElementById("todayDate").innerText = new Date().toDateString();
+}
+
+// UPDATE
+async function updateTask(id){
+  await fetch("http://localhost:5000/task/" + id,{
+    method:"PUT",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({ status: "Completed" })
+  });
+
+  getTasks();
+}
+
+// DELETE
+async function deleteTask(id){
+  await fetch("http://localhost:5000/task/" + id,{
+    method:"DELETE"
+  });
+
+  getTasks();
+}
+
+window.onload = getTasks;
+
+</script>
+
+</body>
+</html>
