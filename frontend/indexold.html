@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Task Manager</title>
+
+<style>
+body {
+  font-family: Arial;
+  background: #f4f6f9;
+  text-align: center;
+}
+
+.container {
+  width: 400px;
+  margin: auto;
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+input {
+  padding: 10px;
+  margin: 5px;
+  width: 80%;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+
+button {
+  padding: 8px 12px;
+  margin: 5px;
+  border: none;
+  border-radius: 5px;
+  background: #007bff;
+  color: white;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #0056b3;
+}
+
+li {
+  list-style: none;
+  background: #eee;
+  margin: 5px;
+  padding: 10px;
+  border-radius: 5px;
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>Task Manager</h1>
+
+<h3>Signup</h3>
+<input id="email" placeholder="Email"><br>
+<input id="password" placeholder="Password"><br>
+<button onclick="signup()">Signup</button>
+
+<h3>Create Task</h3>
+<input id="title" placeholder="Task title"><br>
+<input id="assigned" placeholder="Assign to"><br>
+<button onclick="createTask()">Add Task</button>
+
+<h3>All Tasks</h3>
+<button onclick="getTasks()">Load Tasks</button>
+<ul id="list"></ul>
+
+</div>
+
+<script>
+async function signup(){
+  await fetch("http://localhost:5000/signup",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({
+      email: email.value,
+      password: password.value
+    })
+  });
+  alert("User Created");
+}
+
+async function createTask(){
+  await fetch("http://localhost:5000/task",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({
+      title: title.value,
+      assignedTo: assigned.value
+    })
+  });
+  alert("Task Added");
+  getTasks();
+}
+
+async function getTasks(){
+  const res = await fetch("http://localhost:5000/tasks");
+  const data = await res.json();
+
+  list.innerHTML = "";
+
+  data.forEach(t=>{
+    const li = document.createElement("li");
+
+    li.innerHTML = `
+      <b>${t.title}</b> <br>
+      ${t.assignedTo} <br>
+      Status: ${t.status} <br>
+      <button onclick="updateTask('${t._id}')">Done</button>
+      <button onclick="deleteTask('${t._id}')">Delete</button>
+    `;
+
+    list.appendChild(li);
+  });
+}
+
+async function updateTask(id){
+  await fetch("http://localhost:5000/task/" + id,{
+    method:"PUT",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({ status: "Completed" })
+  });
+  getTasks();
+}
+
+async function deleteTask(id){
+  await fetch("http://localhost:5000/task/" + id,{
+    method:"DELETE"
+  });
+  getTasks();
+}
+</script>
+
+</body>
+</html>
